@@ -29,7 +29,7 @@
 #endif
 
 #include "memdebug.h"
-#include "timediff.h"
+#include "curlx/timediff.h"
 #include "tool_binmode.h"
 
 int select_wrapper(int nfds, fd_set *rd, fd_set *wr, fd_set *exc,
@@ -73,6 +73,7 @@ char *libtest_arg3 = NULL;
 char *libtest_arg4 = NULL;
 int test_argc;
 char **test_argv;
+int testnum;
 
 struct timeval tv_test_start; /* for test timing */
 
@@ -110,7 +111,7 @@ char *hexdump(const unsigned char *buf, size_t len)
   if(len > 200)
     return NULL;
   for(i = 0; i < len; i++, p += 3)
-    msnprintf(p, 4, "%02x ", buf[i]);
+    curl_msnprintf(p, 4, "%02x ", buf[i]);
   return dump;
 }
 
@@ -121,6 +122,7 @@ int main(int argc, char **argv)
   CURLcode result;
   int basearg;
   test_func_t test_func;
+  char *env;
 
   CURL_SET_BINMODE(stdout);
 
@@ -148,7 +150,7 @@ int main(int argc, char **argv)
     basearg = 2;
 
     if(argc < (basearg + 1)) {
-      fprintf(stderr, "Pass testname and URL as arguments please\n");
+      curl_mfprintf(stderr, "Pass testname and URL as arguments please\n");
       return 1;
     }
 
@@ -165,7 +167,7 @@ int main(int argc, char **argv)
     }
 
     if(!test_func) {
-      fprintf(stderr, "Test '%s' not found.\n", test_name);
+      curl_mfprintf(stderr, "Test '%s' not found.\n", test_name);
       return 1;
     }
   }
@@ -173,7 +175,7 @@ int main(int argc, char **argv)
   basearg = 1;
 
   if(argc < (basearg + 1)) {
-    fprintf(stderr, "Pass URL as argument please\n");
+    curl_mfprintf(stderr, "Pass URL as argument please\n");
     return 1;
   }
 
@@ -191,10 +193,16 @@ int main(int argc, char **argv)
 
   URL = argv[basearg]; /* provide this to the rest */
 
-  fprintf(stderr, "URL: %s\n", URL);
+  env = getenv("CURL_TESTNUM");
+  if(env)
+    testnum = atoi(env);
+  else
+    testnum = 0;
+
+  curl_mfprintf(stderr, "URL: %s\n", URL);
 
   result = test_func(URL);
-  fprintf(stderr, "Test ended with result %d\n", result);
+  curl_mfprintf(stderr, "Test ended with result %d\n", result);
 
 #ifdef _WIN32
   /* flush buffers of all streams regardless of mode */

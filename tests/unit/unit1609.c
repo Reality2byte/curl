@@ -43,19 +43,6 @@ static CURLcode unit_setup(void)
   return res;
 }
 
-struct testcase {
-  /* host:port:address[,address]... */
-  const char *optval;
-
-  /* lowercase host and port to retrieve the addresses from hostcache */
-  const char *host;
-  int port;
-
-  /* 0 to 9 addresses expected from hostcache */
-  const char *address[10];
-};
-
-
 /* CURLOPT_RESOLVE address parsing test - to test the following defect fix:
 
  1) if there is already existing host:port pair in the DNS cache and
@@ -88,18 +75,30 @@ Test:
  expected result: cached address has zero timestamp and new address
 */
 
-static const struct testcase tests[] = {
-  /* spaces aren't allowed, for now */
-  { "test.com:80:127.0.0.1",
-    "test.com", 80, { "127.0.0.1", }
-  },
-  { "test.com:80:127.0.0.2",
-    "test.com", 80, { "127.0.0.2", }
-  },
-};
-
 UNITTEST_START
 {
+  struct testcase {
+    /* host:port:address[,address]... */
+    const char *optval;
+
+    /* lowercase host and port to retrieve the addresses from hostcache */
+    const char *host;
+    int port;
+
+    /* 0 to 9 addresses expected from hostcache */
+    const char *address[10];
+  };
+
+  static const struct testcase tests[] = {
+    /* spaces aren't allowed, for now */
+    { "test.com:80:127.0.0.1",
+      "test.com", 80, { "127.0.0.1", }
+    },
+    { "test.com:80:127.0.0.2",
+      "test.com", 80, { "127.0.0.2", }
+    },
+  };
+
   int i;
   struct Curl_multi *multi = NULL;
   struct Curl_easy *easy = NULL;
@@ -137,7 +136,7 @@ UNITTEST_START
     if(Curl_loadhostpairs(easy))
       goto error;
 
-    entry_id = (void *)aprintf("%s:%d", tests[i].host, tests[i].port);
+    entry_id = (void *)curl_maprintf("%s:%d", tests[i].host, tests[i].port);
     if(!entry_id)
       goto error;
 
@@ -157,40 +156,43 @@ UNITTEST_START
 
       if(addr && !Curl_addr2string(addr->ai_addr, addr->ai_addrlen,
                                    ipaddress, &port)) {
-        fprintf(stderr, "%s:%d tests[%d] failed. Curl_addr2string failed.\n",
-                __FILE__, __LINE__, i);
+        curl_mfprintf(stderr,
+                      "%s:%d tests[%d] failed. Curl_addr2string failed.\n",
+                      __FILE__, __LINE__, i);
         problem = true;
         break;
       }
 
       if(addr && !tests[i].address[j]) {
-        fprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
-                "is %s but tests[%d].address[%d] is NULL.\n",
-                __FILE__, __LINE__, i, ipaddress, i, j);
+        curl_mfprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
+                      "is %s but tests[%d].address[%d] is NULL.\n",
+                      __FILE__, __LINE__, i, ipaddress, i, j);
         problem = true;
         break;
       }
 
       if(!addr && tests[i].address[j]) {
-        fprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
-                "is NULL but tests[%d].address[%d] is %s.\n",
-                __FILE__, __LINE__, i, i, j, tests[i].address[j]);
+        curl_mfprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
+                      "is NULL but tests[%d].address[%d] is %s.\n",
+                      __FILE__, __LINE__, i, i, j, tests[i].address[j]);
         problem = true;
         break;
       }
 
       if(!curl_strequal(ipaddress, tests[i].address[j])) {
-        fprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
-                "%s is not equal to tests[%d].address[%d] %s.\n",
-                __FILE__, __LINE__, i, ipaddress, i, j, tests[i].address[j]);
+        curl_mfprintf(stderr, "%s:%d tests[%d] failed. the retrieved addr "
+                      "%s is not equal to tests[%d].address[%d] %s.\n",
+                      __FILE__, __LINE__, i, ipaddress, i, j,
+                      tests[i].address[j]);
         problem = true;
         break;
       }
 
       if(port != tests[i].port) {
-        fprintf(stderr, "%s:%d tests[%d] failed. the retrieved port "
-                "for tests[%d].address[%d] is %d but tests[%d].port is %d.\n",
-                __FILE__, __LINE__, i, i, j, port, i, tests[i].port);
+        curl_mfprintf(stderr, "%s:%d tests[%d] failed. the retrieved port "
+                      "for tests[%d].address[%d] is %d "
+                      "but tests[%d].port is %d.\n",
+                      __FILE__, __LINE__, i, i, j, port, i, tests[i].port);
         problem = true;
         break;
       }

@@ -55,7 +55,7 @@ static size_t write_memory_callback(char *contents, size_t size,
   char *data = (char *)malloc(realsize + 1);
   struct curl_slist *item_append = NULL;
   if(!data) {
-    printf("not enough memory (malloc returned NULL)\n");
+    curl_mprintf("not enough memory (malloc returned NULL)\n");
     return 0;
   }
   memcpy(data, contents, realsize);
@@ -66,7 +66,7 @@ static size_t write_memory_callback(char *contents, size_t size,
     mem->contents = item_append;
   }
   else {
-    printf("not enough memory (curl_slist_append returned NULL)\n");
+    curl_mprintf("not enough memory (curl_slist_append returned NULL)\n");
     return 0;
   }
   return realsize;
@@ -112,8 +112,8 @@ test_thread(void *ptr)
       curl_easy_cleanup(curl);
       /* Check for errors */
       if(res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                curl_easy_strerror(res));
+        curl_mfprintf(stderr, "curl_easy_perform() failed: %s\n",
+                      curl_easy_strerror(res));
         goto test_cleanup;
       }
     }
@@ -126,8 +126,8 @@ test_cleanup:
 
 #if defined(USE_THREADS_POSIX) || defined(USE_THREADS_WIN32)
 
-static void test_lock(CURL *handle, curl_lock_data data,
-                      curl_lock_access laccess, void *useptr)
+static void t3207_test_lock(CURL *handle, curl_lock_data data,
+                            curl_lock_access laccess, void *useptr)
 {
   curl_mutex_t *mutexes = (curl_mutex_t*) useptr;
   (void)handle;
@@ -135,7 +135,7 @@ static void test_lock(CURL *handle, curl_lock_data data,
   Curl_mutex_acquire(&mutexes[data]);
 }
 
-static void test_unlock(CURL *handle, curl_lock_data data, void *useptr)
+static void t3207_test_unlock(CURL *handle, curl_lock_data data, void *useptr)
 {
   curl_mutex_t *mutexes = (curl_mutex_t*) useptr;
   (void)handle;
@@ -150,8 +150,8 @@ static void execute(CURLSH *share, struct Ctx *ctx)
   for(i = 0; i < CURL_LOCK_DATA_LAST - 1; i++) {
     Curl_mutex_init(&mutexes[i]);
   }
-  curl_share_setopt(share, CURLSHOPT_LOCKFUNC, test_lock);
-  curl_share_setopt(share, CURLSHOPT_UNLOCKFUNC, test_unlock);
+  curl_share_setopt(share, CURLSHOPT_LOCKFUNC, t3207_test_lock);
+  curl_share_setopt(share, CURLSHOPT_UNLOCKFUNC, t3207_test_unlock);
   curl_share_setopt(share, CURLSHOPT_USERDATA, (void *)mutexes);
   curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
 
@@ -195,7 +195,7 @@ CURLcode test(char *URL)
 
   share = curl_share_init();
   if(!share) {
-    fprintf(stderr, "curl_share_init() failed\n");
+    curl_mfprintf(stderr, "curl_share_init() failed\n");
     goto test_cleanup;
   }
 
@@ -216,7 +216,7 @@ CURLcode test(char *URL)
     else {
       struct curl_slist *item = ctx[i].contents;
       while(item) {
-        printf("%s", item->data);
+        curl_mprintf("%s", item->data);
         item = item->next;
       }
     }

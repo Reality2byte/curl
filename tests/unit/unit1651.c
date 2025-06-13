@@ -34,7 +34,7 @@ static void unit_stop(void)
 {
 
 }
-#if defined(USE_GNUTLS) || defined(USE_SCHANNEL) || defined(USE_SECTRANSP)
+#if defined(USE_GNUTLS) || defined(USE_SCHANNEL)
 
 /* cert captured from gdb when connecting to curl.se on October 26
    2018 */
@@ -354,7 +354,7 @@ UNITTEST_START
   int byte;
 
   if(curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-    fprintf(stderr, "curl_global_init() failed\n");
+    curl_mfprintf(stderr, "curl_global_init() failed\n");
     return TEST_ERR_MAJOR_BAD;
   }
 

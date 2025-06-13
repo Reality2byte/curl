@@ -27,8 +27,6 @@
 #include "warnless.h"
 #include "memdebug.h"
 
-#define TEST_HANG_TIMEOUT 60 * 1000
-
 CURLcode test(char *URL)
 {
   CURL *curls = NULL;
@@ -51,7 +49,7 @@ CURLcode test(char *URL)
   mc += curl_multi_remove_handle(multi, curls);
 
   if(mc) {
-    fprintf(stderr, "%d was unexpected\n", (int)mc);
+    curl_mfprintf(stderr, "%d was unexpected\n", (int)mc);
     i = CURLE_FAILED_INIT;
   }
 

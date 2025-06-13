@@ -48,26 +48,26 @@
 #include "curl_trc.h"
 #include "memdebug.h"
 
-static CURL *easy;
+static CURL *t2600_easy;
 
 static CURLcode unit_setup(void)
 {
   CURLcode res = CURLE_OK;
 
   global_init(CURL_GLOBAL_ALL);
-  easy = curl_easy_init();
-  if(!easy) {
+  t2600_easy = curl_easy_init();
+  if(!t2600_easy) {
     curl_global_cleanup();
     return CURLE_OUT_OF_MEMORY;
   }
   curl_global_trace("all");
-  curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
+  curl_easy_setopt(t2600_easy, CURLOPT_VERBOSE, 1L);
   return res;
 }
 
 static void unit_stop(void)
 {
-  curl_easy_cleanup(easy);
+  curl_easy_cleanup(t2600_easy);
   curl_global_cleanup();
 }
 
@@ -121,7 +121,7 @@ static void cf_test_destroy(struct Curl_cfilter *cf, struct Curl_easy *data)
   struct cf_test_ctx *ctx = cf->ctx;
 #ifndef CURL_DISABLE_VERBOSE_STRINGS
   infof(data, "%04dms: cf[%s] destroyed",
-        (int)Curl_timediff(Curl_now(), current_tr->started), ctx->id);
+        (int)curlx_timediff(curlx_now(), current_tr->started), ctx->id);
 #else
   (void)data;
 #endif
@@ -138,7 +138,7 @@ static CURLcode cf_test_connect(struct Curl_cfilter *cf,
 
   (void)data;
   *done = FALSE;
-  duration_ms = Curl_timediff(Curl_now(), ctx->started);
+  duration_ms = curlx_timediff(curlx_now(), ctx->started);
   if(duration_ms >= ctx->fail_delay_ms) {
     infof(data, "%04dms: cf[%s] fail delay reached",
           (int)duration_ms, ctx->id);
@@ -200,7 +200,7 @@ static CURLcode cf_test_create(struct Curl_cfilter **pcf,
   }
   ctx->ai_family = ai->ai_family;
   ctx->transport = transport;
-  ctx->started = Curl_now();
+  ctx->started = curlx_now();
 #ifdef USE_IPV6
   if(ctx->ai_family == AF_INET6) {
     ctx->stats = &current_tr->cf6;
@@ -217,7 +217,7 @@ static CURLcode cf_test_create(struct Curl_cfilter **pcf,
     ctx->stats->creations++;
   }
 
-  created_at = Curl_timediff(ctx->started, current_tr->started);
+  created_at = curlx_timediff(ctx->started, current_tr->started);
   if(ctx->stats->creations == 1)
     ctx->stats->first_created = created_at;
   ctx->stats->last_created = created_at;
@@ -244,8 +244,8 @@ static void check_result(struct test_case *tc,
   char msg[256];
   timediff_t duration_ms;
 
-  duration_ms = Curl_timediff(tr->ended, tr->started);
-  fprintf(stderr, "%d: test case took %dms\n", tc->id, (int)duration_ms);
+  duration_ms = curlx_timediff(tr->ended, tr->started);
+  curl_mfprintf(stderr, "%d: test case took %dms\n", tc->id, (int)duration_ms);
 
   if(tr->result != tc->exp_result
     && CURLE_OPERATION_TIMEDOUT != tr->result) {
@@ -266,7 +266,7 @@ static void check_result(struct test_case *tc,
     fail(msg);
   }
 
-  duration_ms = Curl_timediff(tr->ended, tr->started);
+  duration_ms = curlx_timediff(tr->ended, tr->started);
   if(duration_ms < tc->min_duration_ms) {
     curl_msprintf(msg, "%d: expected min duration of %dms, but took %dms",
                   tc->id, (int)tc->min_duration_ms, (int)duration_ms);
@@ -312,23 +312,23 @@ static void test_connect(struct test_case *tc)
 
   list = curl_slist_append(NULL, tc->resolve_info);
   fail_unless(list, "error allocating resolve list entry");
-  curl_easy_setopt(easy, CURLOPT_RESOLVE, list);
-  curl_easy_setopt(easy, CURLOPT_IPRESOLVE, (long)tc->ip_version);
-  curl_easy_setopt(easy, CURLOPT_CONNECTTIMEOUT_MS,
+  curl_easy_setopt(t2600_easy, CURLOPT_RESOLVE, list);
+  curl_easy_setopt(t2600_easy, CURLOPT_IPRESOLVE, (long)tc->ip_version);
+  curl_easy_setopt(t2600_easy, CURLOPT_CONNECTTIMEOUT_MS,
                    (long)tc->connect_timeout_ms);
-  curl_easy_setopt(easy, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
+  curl_easy_setopt(t2600_easy, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
                    (long)tc->he_timeout_ms);
 
-  curl_easy_setopt(easy, CURLOPT_URL, tc->url);
+  curl_easy_setopt(t2600_easy, CURLOPT_URL, tc->url);
   memset(&tr, 0, sizeof(tr));
   tr.cf6.family = "v6";
   tr.cf4.family = "v4";
 
-  tr.started = Curl_now();
-  tr.result = curl_easy_perform(easy);
-  tr.ended = Curl_now();
+  tr.started = curlx_now();
+  tr.result = curl_easy_perform(t2600_easy);
+  tr.ended = curlx_now();
 
-  curl_easy_setopt(easy, CURLOPT_RESOLVE, NULL);
+  curl_easy_setopt(t2600_easy, CURLOPT_RESOLVE, NULL);
   curl_slist_free_all(list);
   list = NULL;
   current_tc = NULL;

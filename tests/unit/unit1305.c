@@ -33,22 +33,22 @@
 #  include <arpa/inet.h>
 #endif
 
-#include "curlx.h"
+#include <curlx.h>
 
 #include "hash.h"
 #include "hostip.h"
 
 #include "memdebug.h" /* LAST include file */
 
-static struct Curl_easy *testdata;
+static struct Curl_easy *t1305_easy;
 static struct Curl_dnscache hp;
 static char *data_key;
 static struct Curl_dns_entry *data_node;
 
 static CURLcode unit_setup(void)
 {
-  testdata = curl_easy_init();
-  if(!testdata) {
+  t1305_easy = curl_easy_init();
+  if(!t1305_easy) {
     curl_global_cleanup();
     return CURLE_OUT_OF_MEMORY;
   }
@@ -66,7 +66,7 @@ static void unit_stop(void)
   free(data_key);
   Curl_dnscache_destroy(&hp);
 
-  curl_easy_cleanup(testdata);
+  curl_easy_cleanup(t1305_easy);
   curl_global_cleanup();
 }
 
@@ -94,7 +94,7 @@ static struct Curl_addrinfo *fake_ai(void)
 
 static CURLcode create_node(void)
 {
-  data_key = aprintf("%s:%d", "dummy", 0);
+  data_key = curl_maprintf("%s:%d", "dummy", 0);
   if(!data_key)
     return CURLE_OUT_OF_MEMORY;
 
