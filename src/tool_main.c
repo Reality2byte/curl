@@ -23,8 +23,6 @@
  ***************************************************************************/
 #include "tool_setup.h"
 
-#include <sys/stat.h>
-
 #ifdef _WIN32
 #include <tchar.h>
 #endif
@@ -36,8 +34,6 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-
-#include "curlx.h"
 
 #include "tool_cfgable.h"
 #include "tool_doswin.h"
@@ -197,13 +193,13 @@ static CURLcode main_init(struct GlobalConfig *config)
 
 static void free_globalconfig(struct GlobalConfig *config)
 {
-  curlx_safefree(config->trace_dump);
+  tool_safefree(config->trace_dump);
 
   if(config->trace_fopened && config->trace_stream)
     fclose(config->trace_stream);
   config->trace_stream = NULL;
 
-  curlx_safefree(config->libcurl);
+  tool_safefree(config->libcurl);
 }
 
 /*

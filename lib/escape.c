@@ -32,10 +32,10 @@
 struct Curl_easy;
 
 #include "urldata.h"
-#include "warnless.h"
+#include "curlx/warnless.h"
 #include "escape.h"
 #include "strdup.h"
-#include "strparse.h"
+#include "curlx/strparse.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -71,7 +71,7 @@ char *curl_easy_escape(CURL *data, const char *string,
   if(!length)
     return strdup("");
 
-  Curl_dyn_init(&d, length * 3 + 1);
+  curlx_dyn_init(&d, length * 3 + 1);
 
   while(length--) {
     /* treat the characters unsigned */
@@ -79,19 +79,19 @@ char *curl_easy_escape(CURL *data, const char *string,
 
     if(ISUNRESERVED(in)) {
       /* append this */
-      if(Curl_dyn_addn(&d, &in, 1))
+      if(curlx_dyn_addn(&d, &in, 1))
         return NULL;
     }
     else {
       /* encode it */
       unsigned char out[3]={'%'};
-      Curl_hexbyte(&out[1], in, FALSE);
-      if(Curl_dyn_addn(&d, out, 3))
+      Curl_hexbyte(&out[1], in);
+      if(curlx_dyn_addn(&d, out, 3))
         return NULL;
     }
   }
 
-  return Curl_dyn_ptr(&d);
+  return curlx_dyn_ptr(&d);
 }
 
 /*
@@ -212,7 +212,8 @@ void Curl_hexencode(const unsigned char *src, size_t len, /* input length */
   DEBUGASSERT(src && len && (olen >= 3));
   if(src && len && (olen >= 3)) {
     while(len-- && (olen >= 3)) {
-      Curl_hexbyte(out, *src, TRUE);
+      out[0] = Curl_ldigits[*src >> 4];
+      out[1] = Curl_ldigits[*src & 0x0F];
       ++src;
       out += 2;
       olen -= 2;
@@ -225,16 +226,11 @@ void Curl_hexencode(const unsigned char *src, size_t len, /* input length */
 
 /* Curl_hexbyte
  *
- * Output a single unsigned char as a two-digit hex number, lowercase or
- * uppercase
+ * Output a single unsigned char as a two-digit UPPERCASE hex number.
  */
 void Curl_hexbyte(unsigned char *dest, /* must fit two bytes */
-                  unsigned char val,
-                  bool lowercase)
+                  unsigned char val)
 {
-  const unsigned char uhex[] = "0123456789ABCDEF";
-  const unsigned char lhex[] = "0123456789abcdef";
-  const unsigned char *t = lowercase ? lhex : uhex;
-  dest[0] = t[val >> 4];
-  dest[1] = t[val & 0x0F];
+  dest[0] = Curl_udigits[val >> 4];
+  dest[1] = Curl_udigits[val & 0x0F];
 }
